@@ -1,0 +1,48 @@
+--- linkedin.inc
++++ linkedin.inc
+@@ -5,16 +5,17 @@
+  */
+ 
+ /*
+- * Called from submit callback at linkedin/token/%user
+- * Let the user authorize us to gain access to his profile, and store credentials.
+- * Also used for login.
++ * Page callback for linkedin/token/%user
++ *
++ * Let the user authorize us to gain access to their profile and store
++ * credentials. Also used for login.
++ *
++ * @param object $account
++ *   The user account to perform the authorization on.
++ * @param string $destination
++ *   Optional internal URL path where the user is redirected to in the end.
+  */
+-
+-/**
+- * @todo Please document this function.
+- * @see http://drupal.org/node/1354
+- */
+-function linkedin_access_token($account) {
++function linkedin_access_token($account, $destination = NULL) {
+   //Get sure library is loaded before doing anything.
+   linkedin_init();
+ 
+@@ -33,7 +34,17 @@
+   $consumer_secret = variable_get('linkedin_consumer_secret', '');
+   $consumer = new OAuthConsumer($consumer_key, $consumer_secret, NULL);
+   $random = md5(rand());
+-  $callback = url('linkedin/' . $back . '/' . $account->uid, array('absolute' => TRUE, 'query' => array('action' => $random))); // random will be used to discard direct call to the path and for anonymous
++
++  $query_parameter = array('action' => $random);
++  // Set the destination query parameter on the callback, so that the user is
++  // redirected back to a specified destination in the end.
++  if ($destination) {
++    $query_parameter['destination'] = $destination;
++  }
++  elseif (isset($_GET['goto'])) {
++    $query_parameter['destination'] = $_GET['goto'];
++  }
++  $callback = url('linkedin/' . $back . '/' . $account->uid, array('absolute' => TRUE, 'query' => $query_parameter)); // random will be used to discard direct call to the path and for anonymous
+   // First or renewal request
+   if (!isset($_GET['action']) || $_GET['action'] != $_SESSION['random']) {
+     $_SESSION['random'] = $random;
